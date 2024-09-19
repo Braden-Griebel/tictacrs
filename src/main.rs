@@ -37,26 +37,31 @@ fn game(){
 fn play()->bool{
     let mut game_board = game::board::Board::new();
     let mut current_player = Piece::X;
-    let mut buffer = String::new();
+
     loop {
         println!("Player {} Please Enter Your Move (q to quit)", current_player);
         println!("{}", game_board);
         // Get player input
+        let mut buffer = String::new();
         io::stdin().read_line(&mut buffer).expect("Failed to read line");
-        match buffer.trim() {
-            "Q"|"q"|"Quit"|"quit"=>{break;}
+        let pmove = buffer.trim();
+        match pmove {
+            "Q"|"q"|"Quit"|"quit"=>{return false;}
             _=>{}
         }
-        match game_board.player_move(buffer.trim(), &format!("{}",current_player)){
+        match game_board.player_move(pmove, &format!("{}",current_player)){
             Ok(_) => {}
             Err(game::board::BoardError::InvalidMove) => {
                 println!("Sorry, invalid move");
+                continue;
             }
             Err(game::board::BoardError::NotEmpty) => {
-                println!("Sorry, that space is occupied")
+                println!("Sorry, that space is occupied");
+                continue;
             }
             Err(_)=>{
-                println!("Sorry, an unknown error occurred, please try again")
+                println!("Sorry, an unknown error occurred, please try again");
+                continue;
             }
         }
         match game_board.check_winner() {
@@ -73,6 +78,7 @@ fn play()->bool{
         }
     }
     println!("Would you like to play again? [y/n]");
+    let mut buffer = String::new();
     io::stdin().read_line(&mut buffer).expect("Failed to read line");
     match buffer.trim() {
         "y"|"Y"|"yes"|"Yes" => {return true},
