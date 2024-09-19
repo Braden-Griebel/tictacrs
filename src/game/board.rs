@@ -1,8 +1,9 @@
 use std::fmt;
 use std::fmt::format;
 use std::io::Write;
+use borsh::{BorshSerialize, BorshDeserialize};
 
-#[derive(Copy, Debug, Clone)]
+#[derive(Copy, Debug, Clone, Hash, BorshSerialize, BorshDeserialize, PartialOrd, Eq,  Ord)]
 pub enum Piece {
     Empty,
     X,
@@ -97,13 +98,13 @@ impl Board {
             'a' | 'A' => 0,
             'b' | 'B' => 1,
             'c' | 'C' => 2,
-            _ => {return Err(BoardError::InvalidMove)},
+            _ => { return Err(BoardError::InvalidMove) }
         };
         let col: usize = match move_specification_chars[1] {
             '1' => 0,
             '2' => 1,
             '3' => 2,
-            _ => {return Err(BoardError::InvalidMove)},
+            _ => { return Err(BoardError::InvalidMove) }
         };
         self.make_move(row, col, piece_specification)?;
         Ok(())
@@ -111,9 +112,9 @@ impl Board {
 
     fn make_move(&mut self, row: usize, col: usize, val: &str) -> Result<(), BoardError> {
         match self.Squares[row][col] {
-            Piece::Empty => {},
-            Piece::X => {return Err(BoardError::NotEmpty)},
-            Piece::O => {return Err(BoardError::NotEmpty)},
+            Piece::Empty => {}
+            Piece::X => { return Err(BoardError::NotEmpty) }
+            Piece::O => { return Err(BoardError::NotEmpty) }
         }
         match val {
             "X" | "x" => {
@@ -124,8 +125,18 @@ impl Board {
                 self.Squares[row][col] = Piece::O;
                 Ok(())
             }
-            _ => {Err(BoardError::InvalidPiece)}
+            _ => { Err(BoardError::InvalidPiece) }
         }
+    }
+
+    pub fn get_compact_state(&self) -> [Piece; 9] {
+        let mut compact_state = [Piece::Empty; 9];
+        for row in 0..3 {
+            for col in 0..3 {
+                compact_state[3 * row + col] = self.Squares[row][col];
+            }
+        }
+        compact_state
     }
 
     pub fn check_winner(&self) -> Option<Piece> {
@@ -135,7 +146,7 @@ impl Board {
         if let Some(winner) = self.check_winner_row() {
             return Some(winner);
         }
-        if let Some(winner) = self.check_winner_diagonal() {
+        if let Some(winner) = self.check_winner_diag() {
             return Some(winner);
         }
         None
@@ -155,17 +166,17 @@ impl Board {
         for row in 0usize..3 {
             if self.Squares[row][0].eq(&self.Squares[row][1]) &&
                 self.Squares[row][0].eq(&self.Squares[row][2]) &&
-                !self.Squares[row][0].eq(&Piece::Empty){
+                !self.Squares[row][0].eq(&Piece::Empty) {
                 return Some(self.Squares[row][0]);
             }
         }
         None
     }
 
-    fn check_winner_diagonal(&self) -> Option<Piece> {
+    fn check_winner_diag(&self) -> Option<Piece> {
         if self.Squares[0][0].eq(&self.Squares[1][1]) &&
             self.Squares[0][0].eq(&self.Squares[2][2]) &&
-            !self.Squares[0][0].eq(&Piece::Empty){
+            !self.Squares[0][0].eq(&Piece::Empty) {
             return Some(self.Squares[0][0]);
         }
         if self.Squares[2][0].eq(&self.Squares[1][1]) &&
@@ -189,21 +200,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_board_creation(){
+    fn test_board_creation() {
         _ = Board::new();
     }
 
     #[test]
-    fn test_make_move()->Result<(), BoardError>{
+    fn test_make_move() -> Result<(), BoardError> {
         let mut test_board = Board::new();
-        test_board.make_move(1,1, "x")?;
+        test_board.make_move(1, 1, "x")?;
         assert_eq!(test_board.Squares[1][1], Piece::X);
         assert_eq!(test_board.Squares[1][2], Piece::Empty);
         Ok(())
     }
 
     #[test]
-    fn test_player_move()->Result<(), BoardError>{
+    fn test_player_move() -> Result<(), BoardError> {
         let mut test_board = Board::new();
         test_board.player_move("b2", "X")?;
         assert_eq!(test_board.Squares[1][1], Piece::X);
@@ -212,16 +223,16 @@ mod tests {
     }
 
     #[test]
-    fn test_nonempty_move(){
+    fn test_nonempty_move() {
         let mut test_board = Board::new();
-        _=test_board.player_move("c1", "o");
+        _ = test_board.player_move("c1", "o");
         let res = test_board.player_move("c1", "o");
         assert!(res.is_err());
         assert_eq!(res, Err(BoardError::NotEmpty));
     }
 
     #[test]
-    fn test_invalid_piece(){
+    fn test_invalid_piece() {
         let mut test_board = Board::new();
         let res = test_board.player_move("c2", "z");
         assert!(res.is_err());
@@ -229,7 +240,7 @@ mod tests {
     }
 
     #[test]
-    fn test_invalid_move(){
+    fn test_invalid_move() {
         let mut test_board = Board::new();
         let res = test_board.player_move("z2", "o");
         assert!(res.is_err());
@@ -242,7 +253,7 @@ mod tests {
     }
 
     #[test]
-    fn test_check_winner(){
+    fn test_check_winner() {
         let mut test_board = Board::new();
         assert_eq!(test_board.check_winner(), None);
         test_board.player_move("a1", "o").unwrap();
@@ -258,5 +269,41 @@ mod tests {
         test_board.player_move("c1", "o").unwrap();
         assert_eq!(test_board.check_winner_col(), Some(Piece::O));
         assert_eq!(test_board.check_winner(), Some(Piece::O));
+    }
+
+    #[test]
+    fn test_compact_representation() {
+        let mut test_board = Board::new();
+        assert_eq!(test_board.get_compact_state(), [Piece::Empty,
+            Piece::Empty, Piece::Empty, Piece::Empty, Piece::Empty, Piece::Empty,
+            Piece::Empty, Piece::Empty, Piece::Empty]);
+        test_board.player_move("c2", "X").unwrap();
+        assert_eq!(test_board.get_compact_state(),
+                   [
+                       Piece::Empty, Piece::Empty, Piece::Empty,
+                       Piece::Empty, Piece::Empty, Piece::Empty,
+                       Piece::Empty, Piece::X, Piece::Empty,
+                   ]);
+        test_board.player_move("a1", "O").unwrap();
+        assert_eq!(test_board.get_compact_state(),
+                   [
+                       Piece::O, Piece::Empty, Piece::Empty,
+                       Piece::Empty, Piece::Empty, Piece::Empty,
+                       Piece::Empty, Piece::X, Piece::Empty,
+                   ]);
+        test_board.player_move("a3", "X").unwrap();
+        assert_eq!(test_board.get_compact_state(),
+                   [
+                       Piece::O, Piece::Empty, Piece::X,
+                       Piece::Empty, Piece::Empty, Piece::Empty,
+                       Piece::Empty, Piece::X, Piece::Empty,
+                   ]);
+        test_board.player_move("b2", "O").unwrap();
+        assert_eq!(test_board.get_compact_state(),
+                   [
+                       Piece::O, Piece::Empty, Piece::X,
+                       Piece::Empty, Piece::O, Piece::Empty,
+                       Piece::Empty, Piece::X, Piece::Empty,
+                   ]);
     }
 }

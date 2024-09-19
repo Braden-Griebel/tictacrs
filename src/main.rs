@@ -19,13 +19,30 @@ fn main() {
     }
 }
 
-/// Wrapper function to loop play until player quits
+/// Wrapper function to determine if two-player, or one-player mode is desired
 fn game(){
     let mut new_game:bool = true;
     // Game Loop
     loop {
         if new_game {
-            new_game = play();
+            println!("One or two players? (1/2)");
+            let mut buffer = String::new();
+            io::stdin().read_line(&mut buffer).expect("Failed to read line");
+            let choice = buffer.trim();
+            match choice {
+                "1"=>{
+                    // Not implemented yet
+                    continue;
+                },
+                "2"=>{
+                    new_game = two_player();
+                }
+                _=>{
+                    println!("Sorry, couldn't understand, please try again")
+                    continue;
+                }
+            }
+            new_game = two_player();
         } else {
             break;
         }
@@ -33,8 +50,8 @@ fn game(){
 
 }
 
-/// Function to play Tic-Tac-Toe, returns true if another game is desired
-fn play()->bool{
+/// Function to two_player Tic-Tac-Toe, returns true if another game is desired
+fn two_player() ->bool{
     let mut game_board = game::board::Board::new();
     let mut current_player = Piece::X;
 
@@ -77,7 +94,7 @@ fn play()->bool{
             Piece::Empty => {panic!("Current Player Error!")}
         }
     }
-    println!("Would you like to play again? [y/n]");
+    println!("Would you like to two_player again? [y/n]");
     let mut buffer = String::new();
     io::stdin().read_line(&mut buffer).expect("Failed to read line");
     match buffer.trim() {
