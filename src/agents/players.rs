@@ -89,7 +89,7 @@ impl Player {
 
     /// Read in a player save state from a file, additionally requires the learning and
     /// exploration annealing functions (as those can't be serialized).
-    pub fn new_from_file<P: AsRef<Path>>(&self, file_path: P,
+    pub fn new_from_file<P: AsRef<Path>>(file_path: P,
                                          learning_annealing_function: fn(f64, u32) -> f64,
                                          exploration_annealing_function: fn(f64, u32) -> f64,
     ) -> Result<Player, PlayerError> {
@@ -139,6 +139,36 @@ impl Player {
             // Make an optimal move
             self.make_optimal_move(board_state)
         }
+    }
+
+    /// Convert a move from [u8;2] to string specification
+    pub fn to_human_move(comp_move:&[u8;2])->String{
+        let mut human_move: String = String::new();
+        match comp_move[0]{
+            0=>{
+                human_move.push_str("a");
+            },
+            1=>{
+                human_move.push_str("b");
+            }
+            2=>{
+                human_move.push_str("c");
+            }
+            _=>{panic!("Inavlid move found during translation")}
+        };
+        match comp_move[1]{
+            0=>{
+                human_move.push_str("1");
+            },
+            1=>{
+                human_move.push_str("2");
+            }
+            2=>{
+                human_move.push_str("3");
+            }
+            _=>{panic!("Inavlid move found during translation")}
+        };
+        human_move
     }
 
     /// Update which iteration is the current one

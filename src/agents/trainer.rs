@@ -40,10 +40,16 @@ impl Trainer{
                 if let Some(_) = training_board.check_winner(){
                     break;
                 }
+                if training_board.is_full(){
+                    break;
+                }
                 // If the first player didn't win, get the second players move
                 let p2_move = player2.make_move(&training_board.get_compact_state());
                 training_board.make_auto_player_move(p2_move[0], p2_move[1], player2.get_player_piece());
                 if let Some(_) = training_board.check_winner(){
+                    break;
+                }
+                if training_board.is_full(){
                     break;
                 }
             }

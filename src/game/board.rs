@@ -134,7 +134,7 @@ impl Board {
         self.squares[row as usize][col as usize] = piece;
     }
 
-    pub(crate) fn clear_board(&mut self){
+    pub fn clear_board(&mut self){
         for row in 0..3{
             for col in 0..3{
                 self.squares[row][col] = Piece::Empty;
@@ -152,6 +152,19 @@ impl Board {
         compact_state
     }
 
+    /// Check if the board is full, returns true if the board is full, and false otherwise
+    pub fn is_full(&self)->bool{
+        for row in 0..3{
+            for col in 0..3{
+                if self.squares[row][col]==Piece::Empty{
+                    return false
+                }
+            }
+        }
+        true
+    }
+
+    /// Determine if there is a winner, if neither player has won return None
     pub fn check_winner(&self) -> Option<Piece> {
         if let Some(winner) = self.check_winner_col() {
             return Some(winner);

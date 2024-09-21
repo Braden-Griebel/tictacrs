@@ -1,20 +1,22 @@
 use std::io;
 use std::path::PathBuf;
 use clap::{Parser, Subcommand};
+use annealing::{INITIAL_EXPLORATION_RATE, INITIAL_LEARNING_RATE};
 use tictacrs::agents::players::Player;
 use tictacrs::agents::trainer::Trainer;
 use tictacrs::game::board::Piece;
 
 mod two_player;
 mod single_player;
+mod annealing;
 
 fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Some(Commands::Play) => {
+        Some(Commands::Play{trained_directory}) => {
             println!("Welcome to TicTacRs!");
-            game();
+            game(trained_directory.clone());
             println!("Thank you for playing!");
         }
         Some(Commands::Train {
@@ -37,13 +39,13 @@ fn main() {
             let mut player1 = Player::new(Piece::X,
                                           INITIAL_LEARNING_RATE,
                                           INITIAL_EXPLORATION_RATE,
-                                          learning_rate_function,
-                                          exploration_rate_function);
+                                          annealing::learning_rate_function,
+                                          annealing::exploration_rate_function);
             let mut player2 = Player::new(Piece::O,
                                           INITIAL_LEARNING_RATE,
                                           INITIAL_EXPLORATION_RATE,
-                                          learning_rate_function,
-                                          exploration_rate_function);
+                                          annealing::learning_rate_function,
+                                          annealing::exploration_rate_function);
             _ = Trainer::train(&mut player1, &mut player2, iterations,
                            &output_directory, *progress_bar)
         }
@@ -51,28 +53,9 @@ fn main() {
     }
 }
 
-const INITIAL_LEARNING_RATE: f64 = 0.75;
-const INITIAL_EXPLORATION_RATE: f64 = 0.2;
-
-
-/// Function used for calculating the learning rate
-fn learning_rate_function(initial_rate: f64, iteration: u32) -> f64 {
-    // Currently uses a step decay
-    let drop_rate:f64 = 0.9;
-    let step_size: u32 = 20;
-    initial_rate * drop_rate.powi((iteration/step_size) as i32)
-}
-
-/// Function used for calculating the exploration rate
-fn exploration_rate_function(initial_rate: f64, iteration: u32) -> f64 {
-    // Currently uses a step decay
-    let drop_rate: f64 = 0.9;
-    let step_size: u32 = 10;
-    initial_rate * drop_rate.powi((iteration/step_size) as i32)
-}
 
 /// Wrapper function to determine if two-player, or one-player mode is desired
-fn game() {
+fn game(trained_player_dir: Option<PathBuf>) {
     let mut new_game: bool = true;
     // Game Loop
     loop {
@@ -83,8 +66,8 @@ fn game() {
             let choice = buffer.trim();
             match choice {
                 "1" => {
-                    // Not implemented yet
-                    new_game = single_player::single_player();
+
+                    new_game = single_player::single_player(trained_player_dir.clone());
                 }
                 "2" => {
                     new_game = two_player::two_player();
@@ -112,13 +95,20 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Play Game
-    Play,
+    Play {
+        /// Directory containing the trained players
+        #[arg(short,long)]
+        trained_directory: Option<PathBuf>,
+    },
     /// Train the players
     Train {
+        /// Number of training iterations to run
         #[arg(short, long, value_name = "iterations")]
         iterations: Option<u32>,
+        /// Where the trained player data will be saved to
         #[arg(short, long)]
         output_directory: Option<PathBuf>,
+        /// Whether a progress bar should be shown
         #[arg(short, long)]
         progress_bar: bool,
     },

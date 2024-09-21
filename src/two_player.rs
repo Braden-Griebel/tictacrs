@@ -40,6 +40,10 @@ pub fn two_player() ->bool{
                 break;
             }
         }
+        if game_board.is_full(){
+            println!("No Winner!");
+            break;
+        }
         current_player = match current_player{
             Piece::X => {Piece::O}
             Piece::O => {Piece::X}
