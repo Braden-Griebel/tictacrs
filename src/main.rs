@@ -1,7 +1,12 @@
-use tictacrs::game;
 use std::io;
+use std::path::PathBuf;
 use clap::{Parser, Subcommand};
+use tictacrs::agents::players::Player;
+use tictacrs::agents::trainer::Trainer;
 use tictacrs::game::board::Piece;
+
+mod two_player;
+mod single_player;
 
 fn main() {
     let cli = Cli::parse();
@@ -11,17 +16,64 @@ fn main() {
             println!("Welcome to TicTacRs!");
             game();
             println!("Thank you for playing!");
-        },
-        Some(Commands::Train {iterations})=>{
+        }
+        Some(Commands::Train {
+                 iterations,
+                 output_directory,
+                 progress_bar,
+             }
+        ) => {
+            let iterations: u32 = match iterations {
+                None => {1000}
+                Some(i) => {*i}
+            };
+            let output_directory: PathBuf = match output_directory {
+                None => {
+                    std::env::current_dir().unwrap()
+                }
+                Some(out) => {out.clone()}
+            };
             println!("Training iterations: {}", iterations);
+            let mut player1 = Player::new(Piece::X,
+                                          INITIAL_LEARNING_RATE,
+                                          INITIAL_EXPLORATION_RATE,
+                                          learning_rate_function,
+                                          exploration_rate_function);
+            let mut player2 = Player::new(Piece::O,
+                                          INITIAL_LEARNING_RATE,
+                                          INITIAL_EXPLORATION_RATE,
+                                          learning_rate_function,
+                                          exploration_rate_function);
+            _ = Trainer::train(&mut player1, &mut player2, iterations,
+                           &output_directory, *progress_bar)
         }
         None => {}
     }
 }
 
+const INITIAL_LEARNING_RATE: f64 = 0.75;
+const INITIAL_EXPLORATION_RATE: f64 = 0.2;
+
+
+/// Function used for calculating the learning rate
+fn learning_rate_function(initial_rate: f64, iteration: u32) -> f64 {
+    // Currently uses a step decay
+    let drop_rate:f64 = 0.9;
+    let step_size: u32 = 20;
+    initial_rate * drop_rate.powi((iteration/step_size) as i32)
+}
+
+/// Function used for calculating the exploration rate
+fn exploration_rate_function(initial_rate: f64, iteration: u32) -> f64 {
+    // Currently uses a step decay
+    let drop_rate: f64 = 0.9;
+    let step_size: u32 = 10;
+    initial_rate * drop_rate.powi((iteration/step_size) as i32)
+}
+
 /// Wrapper function to determine if two-player, or one-player mode is desired
-fn game(){
-    let mut new_game:bool = true;
+fn game() {
+    let mut new_game: bool = true;
     // Game Loop
     loop {
         if new_game {
@@ -30,81 +82,23 @@ fn game(){
             io::stdin().read_line(&mut buffer).expect("Failed to read line");
             let choice = buffer.trim();
             match choice {
-                "1"=>{
+                "1" => {
                     // Not implemented yet
-                    continue;
-                },
-                "2"=>{
-                    new_game = two_player();
+                    new_game = single_player::single_player();
                 }
-                _=>{
-                    println!("Sorry, couldn't understand, please try again")
+                "2" => {
+                    new_game = two_player::two_player();
+                }
+                _ => {
+                    println!("Sorry, couldn't understand, please try again");
                     continue;
                 }
             }
-            new_game = two_player();
+            new_game = two_player::two_player();
         } else {
             break;
         }
     }
-
-}
-
-/// Function to two_player Tic-Tac-Toe, returns true if another game is desired
-fn two_player() ->bool{
-    let mut game_board = game::board::Board::new();
-    let mut current_player = Piece::X;
-
-    loop {
-        println!("Player {} Please Enter Your Move (q to quit)", current_player);
-        println!("{}", game_board);
-        // Get player input
-        let mut buffer = String::new();
-        io::stdin().read_line(&mut buffer).expect("Failed to read line");
-        let pmove = buffer.trim();
-        match pmove {
-            "Q"|"q"|"Quit"|"quit"=>{return false;}
-            _=>{}
-        }
-        match game_board.player_move(pmove, &format!("{}",current_player)){
-            Ok(_) => {}
-            Err(game::board::BoardError::InvalidMove) => {
-                println!("Sorry, invalid move");
-                continue;
-            }
-            Err(game::board::BoardError::NotEmpty) => {
-                println!("Sorry, that space is occupied");
-                continue;
-            }
-            Err(_)=>{
-                println!("Sorry, an unknown error occurred, please try again");
-                continue;
-            }
-        }
-        match game_board.check_winner() {
-            None => {}
-            Some(piece) => {
-                println!("Congratulations Player {}, You Win!", piece);
-                break;
-            }
-        }
-        current_player = match current_player{
-            Piece::X => {Piece::O}
-            Piece::O => {Piece::X}
-            Piece::Empty => {panic!("Current Player Error!")}
-        }
-    }
-    println!("Would you like to two_player again? [y/n]");
-    let mut buffer = String::new();
-    io::stdin().read_line(&mut buffer).expect("Failed to read line");
-    match buffer.trim() {
-        "y"|"Y"|"yes"|"Yes" => {return true},
-        "n"|"N"|"no"|"No" => {return false},
-        _=>{
-            println!("Sorry, couldn't understand your response, exiting...");
-        }
-    }
-    false
 }
 
 #[derive(Parser)]
@@ -122,6 +116,10 @@ enum Commands {
     /// Train the players
     Train {
         #[arg(short, long, value_name = "iterations")]
-        iterations: u32,
-    }
+        iterations: Option<u32>,
+        #[arg(short, long)]
+        output_directory: Option<PathBuf>,
+        #[arg(short, long)]
+        progress_bar: bool,
+    },
 }

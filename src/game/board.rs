@@ -49,7 +49,7 @@ impl PartialEq for Piece {
 }
 
 pub struct Board {
-    Squares: [[Piece; 3]; 3],
+    squares: [[Piece; 3]; 3],
 }
 
 impl fmt::Display for Board {
@@ -68,9 +68,9 @@ b    {} | {} | {}
        |   |
 c    {} | {} | {}
        |   |   \n",
-                self.Squares[0][0], self.Squares[0][1], self.Squares[0][2],
-                self.Squares[1][0], self.Squares[1][1], self.Squares[1][2],
-                self.Squares[2][0], self.Squares[2][1], self.Squares[2][2],
+                self.squares[0][0], self.squares[0][1], self.squares[0][2],
+                self.squares[1][0], self.squares[1][1], self.squares[1][2],
+                self.squares[2][0], self.squares[2][1], self.squares[2][2],
             )
         );
         write!(f, "{}", repr)
@@ -79,14 +79,14 @@ c    {} | {} | {}
 
 impl PartialEq for Board {
     fn eq(&self, other: &Self) -> bool {
-        self.Squares == other.Squares
+        self.squares == other.squares
     }
 }
 
 impl Board {
     pub fn new() -> Board {
         Board {
-            Squares: [[Piece::Empty, Piece::Empty, Piece::Empty],
+            squares: [[Piece::Empty, Piece::Empty, Piece::Empty],
                 [Piece::Empty, Piece::Empty, Piece::Empty],
                 [Piece::Empty, Piece::Empty, Piece::Empty], ]
         }
@@ -111,21 +111,34 @@ impl Board {
     }
 
     fn make_move(&mut self, row: usize, col: usize, val: &str) -> Result<(), BoardError> {
-        match self.Squares[row][col] {
+        match self.squares[row][col] {
             Piece::Empty => {}
             Piece::X => { return Err(BoardError::NotEmpty) }
             Piece::O => { return Err(BoardError::NotEmpty) }
         }
         match val {
             "X" | "x" => {
-                self.Squares[row][col] = Piece::X;
+                self.squares[row][col] = Piece::X;
                 Ok(())
             }
             "O" | "o" => {
-                self.Squares[row][col] = Piece::O;
+                self.squares[row][col] = Piece::O;
                 Ok(())
             }
             _ => { Err(BoardError::InvalidPiece) }
+        }
+    }
+
+    /// Make a move using a Piece object instead of a str
+    pub(crate) fn make_auto_player_move(&mut self, row:u8, col:u8, piece: Piece){
+        self.squares[row as usize][col as usize] = piece;
+    }
+
+    pub(crate) fn clear_board(&mut self){
+        for row in 0..3{
+            for col in 0..3{
+                self.squares[row][col] = Piece::Empty;
+            }
         }
     }
 
@@ -133,7 +146,7 @@ impl Board {
         let mut compact_state = [Piece::Empty; 9];
         for row in 0..3 {
             for col in 0..3 {
-                compact_state[3 * row + col] = self.Squares[row][col];
+                compact_state[3 * row + col] = self.squares[row][col];
             }
         }
         compact_state
@@ -154,35 +167,35 @@ impl Board {
 
     fn check_winner_col(&self) -> Option<Piece> {
         for col in 0usize..3 {
-            if self.Squares[0][col].eq(&self.Squares[1][col]) &&
-                self.Squares[0][col].eq(&self.Squares[2][col]) &&
-                !self.Squares[0][col].eq(&Piece::Empty) {
-                return Some(self.Squares[0][col]);
+            if self.squares[0][col].eq(&self.squares[1][col]) &&
+                self.squares[0][col].eq(&self.squares[2][col]) &&
+                !self.squares[0][col].eq(&Piece::Empty) {
+                return Some(self.squares[0][col]);
             }
         }
         None
     }
     fn check_winner_row(&self) -> Option<Piece> {
         for row in 0usize..3 {
-            if self.Squares[row][0].eq(&self.Squares[row][1]) &&
-                self.Squares[row][0].eq(&self.Squares[row][2]) &&
-                !self.Squares[row][0].eq(&Piece::Empty) {
-                return Some(self.Squares[row][0]);
+            if self.squares[row][0].eq(&self.squares[row][1]) &&
+                self.squares[row][0].eq(&self.squares[row][2]) &&
+                !self.squares[row][0].eq(&Piece::Empty) {
+                return Some(self.squares[row][0]);
             }
         }
         None
     }
 
     fn check_winner_diag(&self) -> Option<Piece> {
-        if self.Squares[0][0].eq(&self.Squares[1][1]) &&
-            self.Squares[0][0].eq(&self.Squares[2][2]) &&
-            !self.Squares[0][0].eq(&Piece::Empty) {
-            return Some(self.Squares[0][0]);
+        if self.squares[0][0].eq(&self.squares[1][1]) &&
+            self.squares[0][0].eq(&self.squares[2][2]) &&
+            !self.squares[0][0].eq(&Piece::Empty) {
+            return Some(self.squares[0][0]);
         }
-        if self.Squares[2][0].eq(&self.Squares[1][1]) &&
-            self.Squares[2][0].eq(&self.Squares[0][2]) &&
-            !self.Squares[2][0].eq(&Piece::Empty) {
-            return Some(self.Squares[2][0]);
+        if self.squares[2][0].eq(&self.squares[1][1]) &&
+            self.squares[2][0].eq(&self.squares[0][2]) &&
+            !self.squares[2][0].eq(&Piece::Empty) {
+            return Some(self.squares[2][0]);
         }
         None
     }
@@ -208,8 +221,8 @@ mod tests {
     fn test_make_move() -> Result<(), BoardError> {
         let mut test_board = Board::new();
         test_board.make_move(1, 1, "x")?;
-        assert_eq!(test_board.Squares[1][1], Piece::X);
-        assert_eq!(test_board.Squares[1][2], Piece::Empty);
+        assert_eq!(test_board.squares[1][1], Piece::X);
+        assert_eq!(test_board.squares[1][2], Piece::Empty);
         Ok(())
     }
 
@@ -217,8 +230,8 @@ mod tests {
     fn test_player_move() -> Result<(), BoardError> {
         let mut test_board = Board::new();
         test_board.player_move("b2", "X")?;
-        assert_eq!(test_board.Squares[1][1], Piece::X);
-        assert_eq!(test_board.Squares[1][2], Piece::Empty);
+        assert_eq!(test_board.squares[1][1], Piece::X);
+        assert_eq!(test_board.squares[1][2], Piece::Empty);
         Ok(())
     }
 

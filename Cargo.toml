@@ -6,4 +6,5 @@ edition = "2021"
 [dependencies]
 borsh = { version = "1.5.1", features = ["derive"] }
 clap = { version = "4.5.17", features = ["cargo", "derive"] }
+indicatif = "0.17.8"
 rand = { version = "0.8.5", features = ["small_rng"] }
