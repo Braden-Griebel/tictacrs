@@ -77,7 +77,6 @@ fn game(trained_player_dir: Option<PathBuf>) {
                     continue;
                 }
             }
-            new_game = two_player::two_player();
         } else {
             break;
         }

@@ -11,13 +11,13 @@ pub(crate) fn single_player(trained_player_dir: Option<PathBuf>) -> bool {
     loop {
         play_board.clear_board();
         println!("Would you like to play as X or O? (X/O)");
-        let mut buffer = String::new();
         // Piece selection loop
         let computer_piece: Piece;
         let human_piece: Piece;
         let mut computer_piece_str: String = String::new();
         let mut human_piece_str: String = String::new();
         loop {
+            let mut buffer = String::new();
             io::stdin().read_line(&mut buffer).expect("Failed to read line");
             let choice = buffer.trim();
              human_piece = match choice {
