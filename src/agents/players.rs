@@ -87,6 +87,10 @@ impl Player {
         self.save_state.piece
     }
 
+    pub fn get_iteration(&self)->u32{
+        self.save_state.iteration
+    }
+
     /// Read in a player save state from a file, additionally requires the learning and
     /// exploration annealing functions (as those can't be serialized).
     pub fn new_from_file<P: AsRef<Path>>(file_path: P,
@@ -175,6 +179,11 @@ impl Player {
     pub fn update_iteration(&mut self, new_iter: u32) {
         // Update the iteration value itself
         self.save_state.iteration = new_iter;
+    }
+
+    /// Show a state that caused the player to lose, and reduce its value to 0.
+    pub fn show_loosing_state(&mut self, compact_state: &[Piece;9]){
+        self.save_state.state_space.insert(*compact_state,0f64);
     }
 
     /// Choose the optimal move (or choose randomly from equivalent moves)

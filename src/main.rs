@@ -26,7 +26,7 @@ fn main() {
              }
         ) => {
             let iterations: u32 = match iterations {
-                None => {1000}
+                None => {10000}
                 Some(i) => {*i}
             };
             let output_directory: PathBuf = match output_directory {

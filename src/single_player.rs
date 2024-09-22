@@ -78,6 +78,14 @@ pub(crate) fn single_player(trained_player_dir: Option<PathBuf>) -> bool {
             // Also the computer player should never make an invalid move
             _=play_board.player_move(&computer_move, &computer_piece_str).expect("Computer failed to make possible move");
         }
+        // Store a copy of the board state right after the computer plays
+        // in order to show it that as a losing position
+        let mut prev_board: [Piece; 9] =
+            [
+                Piece::Empty, Piece::Empty, Piece::Empty,
+                Piece::Empty, Piece::Empty, Piece::Empty,
+                Piece::Empty, Piece::Empty, Piece::Empty,
+            ];
         // Start the game itself
         loop {
             println!("{}", play_board);
@@ -87,7 +95,9 @@ pub(crate) fn single_player(trained_player_dir: Option<PathBuf>) -> bool {
                 return false;
             }
             match play_board.player_move(&human_move, &human_piece_str) {
-                Ok(_)=>{},
+                Ok(_)=>{
+                    println!("{}", play_board);
+                },
                 Err(_)=>{
                     println!("Sorry, invalid move, try again");
                     continue;
@@ -97,11 +107,15 @@ pub(crate) fn single_player(trained_player_dir: Option<PathBuf>) -> bool {
             if let Some(_) = play_board.check_winner() {
                 // If there is a winner, it has to be due to the most recent move
                 // in this case the players
+                println!("{}", play_board);
                 println!("Congratulations Player! You Win!");
+                // Show the computer the losing state so it can update
+                computer_player.show_loosing_state(&prev_board);
                 break;
             }
             // Check if the board is full
             if play_board.is_full(){
+                println!("{}", play_board);
                 println!("Sorry, it's a tie.");
                 break;
             }
@@ -109,14 +123,18 @@ pub(crate) fn single_player(trained_player_dir: Option<PathBuf>) -> bool {
             computer_move = Player::to_human_move(&computer_player.make_move(&play_board.get_compact_state()));
             _=play_board.player_move(&computer_move, &computer_piece_str).expect("Computer failed to make possible move");
             if let Some(_) = play_board.check_winner(){
+                println!("{}", play_board);
                 println!("Oh No! You have been defeated by a computer! :-(");
                 break;
             }
             if play_board.is_full(){
+                println!("{}", play_board);
                 println!("Sorry, it's a tie.");
                 break;
             }
+            prev_board = play_board.get_compact_state();
         }
+        computer_player.update_iteration(computer_player.get_iteration());
         // Now that the game has been played, save the automated player
         let trained_player_file = match computer_piece {
             Piece::X => trained_player_dir.join(PathBuf::from("player_x_save.ttr")),
